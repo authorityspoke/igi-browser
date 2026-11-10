@@ -32,6 +32,14 @@ const party = (query.get('party') ?? '').replace(/[^A-Za-z0-9]/g, '');
 if (party) args.push('+party_join', party);
 if (query.has('host')) args.push('-host');
 if (query.get('name')) args.push('-name', query.get('name'));
+// Graphics, changeable later without a rebuild: ?preset=vanilla|enhanced|high|ultra picks the picture
+// (vanilla is the original's, and the default), and ?scale=0.25..1 renders below the canvas and upscales.
+// A touch device starts at 0.75 scale unless ?scale= says otherwise: the phone default is the light one.
+const preset = (query.get('preset') ?? '').toLowerCase();
+if (['vanilla', 'enhanced', 'high', 'ultra'].includes(preset)) args.push('+gfx_preset', preset);
+const scale = parseFloat(query.get('scale') ?? '');
+if (Number.isFinite(scale)) args.push('+r_scale', String(Math.min(1, Math.max(0.25, scale))));
+else if (matchMedia('(pointer: coarse)').matches) args.push('+r_scale', '0.75');
 
 const HINT = 'The folder with IGI.exe in it, usually pc inside the installation.';
 
