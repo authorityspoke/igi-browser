@@ -42,7 +42,19 @@ function retakeScreen() {
 
 // Every device pixel, a phone's three to the CSS pixel included: drawn at fewer, the browser scaled the picture up and
 // the menus' small type smeared past reading.
-const ratio = () => window.devicePixelRatio || 1;
+//
+// Phone build (v2, 2026-11-11): that full-DPR backing is the single biggest cost on a phone -- a 2400x1080 CSS canvas
+// at DPR 3 is a 7200x3240 backing before r_scale even applies -- and the overnight build was still laggy on a vivo
+// phone, so on touch screens the effective ratio is capped at 1.0 by default. The menus do get softer (they are drawn
+// at the capped backing, then the engine's r_scale upscales inside it), which is the price of the speed; a player
+// who wants the sharp menus back can raise it with ?dpr= in the address (see below). Desktop is never capped.
+// ?dpr=1 | 1.25 | 1.5 | 2 | full -- a number caps the ratio at that value on every device, 'full' removes the cap.
+const dprParam = new URLSearchParams(location.search).get('dpr');
+const dprOverride = dprParam === 'full' ? Infinity
+  : dprParam === null ? null : parseFloat(dprParam);
+const dprCap = Number.isFinite(dprOverride) && dprOverride > 0 ? dprOverride
+  : matchMedia('(pointer: coarse)').matches ? 1.0 : Infinity;
+const ratio = () => Math.min(window.devicePixelRatio || 1, dprCap);
 const drawable = () => {
   const box = canvas.getBoundingClientRect();
   return [Math.max(1, Math.round(box.width * ratio())), Math.max(1, Math.round(box.height * ratio()))];
